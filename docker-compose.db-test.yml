@@ -1,0 +1,22 @@
+
+services:
+  mysql:
+    image: mysql:8.3
+    container_name: dev-mysql
+    ports:
+      - "${TEST_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TEST_DB_PASSWORD:-devpass}
+      MYSQL_DATABASE: ${TEST_DB_NAME:-starter_dev}
+      MYSQL_USER: ${TEST_DB_USERNAME:-devuser}
+      MYSQL_PASSWORD: ${TEST_DB_PASSWORD:-devpass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
