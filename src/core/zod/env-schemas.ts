@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { bcryptSchema } from '../../features/password/implementation/providers/bcrypt/bcrypt.schema';
 
 // 📦 Schémas de validation
 const DatabaseSchema = z.object({
@@ -47,6 +48,7 @@ const FrontendSchema = z.object({
 // 🧩 Fusion finale
 export const GlobalSchema = DatabaseSchema.merge(ServerSchema)
   .merge(FrontendSchema)
+  .merge(bcryptSchema)
   .describe('Globale App Configuration ');
 
 export type EnvVariables = z.infer<typeof GlobalSchema>;

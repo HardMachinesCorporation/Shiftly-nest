@@ -47,6 +47,7 @@ export class ZodService implements OnModuleInit {
       TEST_DB_USERNAME: this.get('TEST_DB_USERNAME'),
       TEST_DB_PASSWORD: this.get('TEST_DB_PASSWORD'),
       TEST_DB_NAME: this.get('TEST_DB_NAME'),
+      SALT_ROUND: this.get('SALT_ROUND'),
     };
 
     // Validate all required fields are present
