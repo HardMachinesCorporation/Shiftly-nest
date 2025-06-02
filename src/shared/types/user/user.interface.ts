@@ -1,5 +1,5 @@
 export default interface IUser {
-  id?: number;
+  userRef?: number;
   name: string;
   email: string;
   password?: string;

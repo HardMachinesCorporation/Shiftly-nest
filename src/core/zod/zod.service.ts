@@ -118,32 +118,98 @@ export class ZodService implements OnModuleInit {
     this.logger.log(`🚀 Configuration loaded for ${this.env} environment`);
   }
 
+  /**
+   * Checks if the current environment is production.
+   *
+   * @returns {boolean} True if NODE_ENV is 'production', false otherwise
+   *
+   * @example
+   * if (config.isProd) {
+   *   // Enable production-specific features
+   * }
+   */
   get isProd(): boolean {
     return this.env === 'production';
   }
 
+  /**
+   * Retrieves the application port from environment variables.
+   *
+   * @returns {number} The port number the application should listen on
+   * @throws {Error} If APP_PORT is not set or invalid
+   *
+   * @example
+   * const port = config.ApplicationPort; // 3000
+   */
   get ApplicationPort(): number {
     return this.get('APP_PORT');
   }
 
+  /**
+   * Checks if the current environment is development.
+   *
+   * @returns {boolean} True if NODE_ENV is 'development', false otherwise
+   *
+   * @example
+   * if (config.isDev) {
+   *   // Enable development tools
+   * }
+   */
   get isDev(): boolean {
     return this.env === 'development';
   }
 
+  /**
+   * Retrieves the database connection URL.
+   *
+   * @returns {string} The complete database connection string
+   * @throws {Error} If DATABASE_URL is not set
+   *
+   * @example
+   * const dbUrl = config.databaseURL; // 'postgres://user:pass@localhost:5432/db'
+   */
   get databaseURL(): string {
     return this.get('DATABASE_URL');
   }
 
+  /**
+   * Gets the appropriate frontend URL based on current environment.
+   *
+   * @returns {string} Either:
+   *   - FRONTEND_DEV_URL in development
+   *   - FRONTEND_PROD_URL in production
+   * @throws {Error} If the appropriate URL is not set
+   *
+   * @example
+   * const url = config.frontendURL; // 'http://localhost:3000' or 'https://app.com'
+   */
   get frontendURL() {
     const currentEnv: 'development' | 'production' = this.env;
     if (currentEnv === 'development') return this.get('FRONTEND_DEV_URL');
     else return this.get('FRONTEND_PROD_URL');
   }
 
+  /**
+   * Retrieves the API route prefix.
+   *
+   * @returns {string} The prefix for all API routes (e.g. '/api')
+   * @throws {Error} If APP_PREFIX is not set
+   *
+   * @example
+   * app.use(config.apiPrefix, router);
+   */
   get apiPrefix(): string {
     return this.get('APP_PREFIX');
   }
 
+  /**
+   * Gets the current Node.js environment.
+   *
+   * @returns {string} The value of NODE_ENV (typically 'development', 'test', or 'production')
+   *
+   * @example
+   * console.log(`Running in ${config.currentEnv} mode`);
+   */
   get currentEnv(): string {
     return this.get('NODE_ENV');
   }
