@@ -11,12 +11,45 @@ import {
   IResultWithPagination,
 } from '../../types/pagination/pagination.interface';
 
+/**
+ * Abstract base service providing common CRUD operations for TypeORM entities.
+ *
+ * @template T - The entity type extending ObjectLiteral
+ *
+ * @property {Logger} logger - Instance-specific logger with context
+ * @property {Repository<T>} repository - TypeORM repository for entity T
+ */
 export abstract class BaseAbstractService<T extends ObjectLiteral> {
-  private readonly logger: Logger = new Logger(BaseAbstractService.name);
-  protected constructor(protected readonly repository: Repository<T>) {
-    this.logger.log('🎯 Abstract Base service is Initialized');
+  protected readonly logger: Logger;
+  protected constructor(
+    protected readonly repository: Repository<T>,
+    context: string
+  ) {
+    this.logger = new Logger(context);
+    this.logger.log(`🎯 ${context} is Initialized`);
   }
 
+  /**
+   * Finds a single entity by its primary ID with optional transaction support.
+   *
+   * @param {number} id - The primary key ID to search for
+   * @param {EntityManager} [manager] - Optional transaction manager
+   * @returns {Promise<T|null>} The found entity or null
+   *
+   * @features
+   * - Uses pessimistic read lock in transactions
+   * - Explicitly excludes soft-deleted entities
+   * - Type-safe where clause construction
+   *
+   * @example
+   * const entity = await service.findOneByID(123);
+   *
+   * @example
+   * // With transaction
+   * await manager.transaction(async (tx) => {
+   *   const entity = await service.findOneByID(123, tx);
+   * });
+   */
   async findOneByID(id: number, manager?: EntityManager): Promise<T | null> {
     const repo: Repository<T> = manager
       ? manager.getRepository(this.repository.target)
@@ -34,6 +67,30 @@ export abstract class BaseAbstractService<T extends ObjectLiteral> {
     });
   }
 
+  /**
+   * Finds entity by either ID or email address with transaction support.
+   *
+   * @param {number|string} idOrEmail - Either:
+   *   - Numeric ID (searches primary key)
+   *   - Email string (searches 'email' field)
+   * @param {EntityManager} [manager] - Optional transaction manager
+   * @returns {Promise<T|null>} The matching entity or null
+   *
+   * @throws {TypeError} If input is neither number nor string
+   *
+   * @features
+   * - Automatic type detection (ID vs email)
+   * - Pessimistic locking in transactions
+   * - Excludes soft-deleted records
+   *
+   * @example
+   * // By ID
+   * await service.findOneByIdOrEmail(123);
+   *
+   * @example
+   * // By email
+   * await service.findOneByIdOrEmail('test@example.com');
+   */
   async findOneByIdOrEmail(
     idOrEmail: number | string,
     manager?: EntityManager
@@ -46,7 +103,7 @@ export abstract class BaseAbstractService<T extends ObjectLiteral> {
     let whereClause: FindOptionsWhere<T>;
     if (typeof idOrEmail === 'number') {
       // On part de l'objet brut { clientRef: number }
-      whereClause = { clientRef: idOrEmail } as unknown as FindOptionsWhere<T>;
+      whereClause = { userRef: idOrEmail } as unknown as FindOptionsWhere<T>;
     } else {
       whereClause = { email: idOrEmail } as unknown as FindOptionsWhere<T>;
     }
@@ -58,6 +115,38 @@ export abstract class BaseAbstractService<T extends ObjectLiteral> {
     });
   }
 
+  /**
+   * Retrieves paginated results with filtering and sorting.
+   *
+   * @param {IPagination<T>} pagination - Configuration object containing:
+   *   - page: Current page number (1-based)
+   *   - limit: Items per page
+   *   - filter: Optional Where conditions (partial entity)
+   * @param {EntityManager} [manager] - Optional transaction manager
+   * @returns {Promise<IResultWithPagination<T>>} Paginated result containing:
+   *   - data: Entity array
+   *   - total: Total matching records count
+   *   - page: Current page
+   *   - limit: Items per page
+   *
+   * @features
+   * - Automatic exclusion of soft-deleted entities
+   * - Default sorting by createdAt DESC
+   * - Type-safe where clause conversion
+   * - Proper pagination metadata
+   *
+   * @example
+   * // Basic pagination
+   * const result = await service.findAll({ page: 1, limit: 10 });
+   *
+   * @example
+   * // With filtering
+   * const result = await service.findAll({
+   *   page: 1,
+   *   limit: 10,
+   *   filter: { status: 'active' }
+   * });
+   */
   async findAll(
     pagination: IPagination<T>,
     manager?: EntityManager

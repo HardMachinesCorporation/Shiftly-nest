@@ -18,10 +18,22 @@ export interface DeleteResponse {
 export abstract class CrudAbstractService<
   T extends ObjectLiteral,
 > extends BaseAbstractService<T> {
-  protected constructor(protected readonly repository: Repository<T>) {
-    super(repository);
+  protected constructor(
+    protected readonly repository: Repository<T>,
+    context: string
+  ) {
+    super(repository, context);
   }
 
+  /**
+   * Creates an entity within a specific EntityManager transaction context.
+   *
+   * @private
+   * @param {DeepPartial<T>} data - Partial entity data including required fields
+   * @param {EntityManager} manager - The EntityManager instance to use for the operation
+   * @returns {Promise<T>} The newly created and saved entity
+   * @throws {Error} If entity creation or saving fails
+   */
   private async createEntityWithManager(
     data: DeepPartial<T>,
     manager: EntityManager
@@ -31,6 +43,23 @@ export abstract class CrudAbstractService<
     return await repo.save(entity);
   }
 
+  /**
+   * Creates an entity either within an existing transaction or a new transaction.
+   *
+   * @param {DeepPartial<T>} data - Partial entity data including required fields
+   * @param {EntityManager} [manager] - Optional EntityManager for existing transaction
+   * @returns {Promise<T>} The newly created and saved entity
+   * @throws {Error} If entity creation or saving fails
+   * @example
+   * // With new transaction
+   * const entity = await service.createEntity({ name: 'New' });
+   *
+   * @example
+   * // Within existing transaction
+   * await manager.transaction(async (tx) => {
+   *   const entity = await service.createEntity({ name: 'New' }, tx);
+   * });
+   */
   async createEntity(
     data: DeepPartial<T>,
     manager?: EntityManager
@@ -42,6 +71,17 @@ export abstract class CrudAbstractService<
         );
   }
 
+  /**
+   * Updates an entity within a specific EntityManager transaction context.
+   *
+   * @private
+   * @param {number} id - ID of the entity to update
+   * @param {Partial<T>} data - Partial entity data with fields to update
+   * @param {EntityManager} manager - The EntityManager instance to use
+   * @returns {Promise<T|null>} The updated entity or null if not found
+   * @throws {HttpException} 404 if entity doesn't exist
+   * @throws {Error} If update operation fails
+   */
   private async updateEntityWithManager(
     id: number,
     data: Partial<T>,
@@ -62,6 +102,17 @@ export abstract class CrudAbstractService<
     return await this.findOneByID(id);
   }
 
+  /**
+   * Validates that an update/delete operation affected the expected number of rows.
+   *
+   * @private
+   * @param {UpdateResult | DeleteResult} result - The TypeORM operation result
+   * @param {number} id - ID of the affected entity
+   * @returns {void}
+   * @throws {HttpException}
+   *   - 404 if no rows were affected during update
+   *   - 409 if no rows were affected during delete
+   */
   private assertAffected(
     result: UpdateResult | DeleteResult,
     id: number
@@ -91,6 +142,26 @@ export abstract class CrudAbstractService<
     }
   }
 
+  /**
+   * Updates an entity either within an existing transaction or a new transaction.
+   *
+   * @param {number} id - ID of the entity to update
+   * @param {Partial<T>} data - Partial entity data with fields to update
+   * @param {EntityManager} [manager] - Optional EntityManager for existing transaction
+   * @returns {Promise<T|null>} The updated entity or null if not found
+   * @throws {HttpException}
+   *   - 404 if entity doesn't exist
+   *   - 409 if delete constraints prevent operation
+   * @example
+   * // With new transaction
+   * const updated = await service.updateEntity(1, { name: 'Updated' });
+   *
+   * @example
+   * // Within existing transaction
+   * await manager.transaction(async (tx) => {
+   *   const updated = await service.updateEntity(1, { name: 'Updated' }, tx);
+   * });
+   */
   async updateEntity(
     id: number,
     data: Partial<T>,
@@ -103,6 +174,17 @@ export abstract class CrudAbstractService<
         );
   }
 
+  /**
+   * Deletes an entity within a specific EntityManager transaction context.
+   *
+   * @private
+   * @param {number} id - ID of the entity to delete
+   * @param {EntityManager} manager - The EntityManager instance to use
+   * @returns {Promise<DeleteResponse>} Operation success confirmation
+   * @throws {HttpException}
+   *   - 404 if entity doesn't exist
+   *   - 409 if delete constraints prevent operation
+   */
   async deleteEntityWithManager(
     id: number,
     manager: EntityManager
@@ -117,6 +199,25 @@ export abstract class CrudAbstractService<
     };
   }
 
+  /**
+   * Deletes an entity either within an existing transaction or a new transaction.
+   *
+   * @param {number} id - ID of the entity to delete
+   * @param {EntityManager} [manager] - Optional EntityManager for existing transaction
+   * @returns {Promise<DeleteResponse>} Operation success confirmation
+   * @throws {HttpException}
+   *   - 404 if entity doesn't exist
+   *   - 409 if delete constraints prevent operation
+   * @example
+   * // With new transaction
+   * const result = await service.deleteEntity(1);
+   *
+   * @example
+   * // Within existing transaction
+   * await manager.transaction(async (tx) => {
+   *   const result = await service.deleteEntity(1, tx);
+   * });
+   */
   async deleteEntity(
     id: number,
     manager?: EntityManager
